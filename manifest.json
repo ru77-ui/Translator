@@ -1,0 +1,15 @@
+{
+  "name": "爆速AI自動翻訳コントローラー",
+  "short_name": "AI翻訳",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#00e5ff",
+  "icons": [
+    {
+      "src": "lhil0-dovhv-001.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
