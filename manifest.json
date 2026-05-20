@@ -7,9 +7,9 @@
   "theme_color": "#00e5ff",
   "icons": [
     {
-      "src": "lhil0-dovhv-001.ico",
-      "sizes": "64x64",
-      "type": "image/x-icon"
+      "src": "my-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ]
 }
