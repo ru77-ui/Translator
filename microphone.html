@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>爆速AI自動翻訳コントローラー</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        background: #0f0f12;
+        color: #fff;
+        text-align: center;
+      }
+
+      h1 {
+        color: #00e5ff;
+        font-size: 26px;
+        text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+      }
+
+      .lang-selector {
+        margin: 25px 0;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .lang-btn {
+        font-size: 15px;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: 2px solid #333;
+        background: #1a1a24;
+        color: #ccc;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .lang-btn.active {
+        background: #00e5ff;
+        color: #000;
+        border-color: #00e5ff;
+        font-weight: bold;
+        box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+      }
+
+      #start-btn {
+        font-size: 20px;
+        padding: 16px 50px;
+        border-radius: 35px;
+        border: none;
+        cursor: pointer;
+        background: #39ff14;
+        color: #000;
+        font-weight: bold;
+        margin-top: 15px;
+        box-shadow: 0 0 15px rgba(57, 255, 20, 0.3);
+      }
+
+      #start-btn:disabled {
+        background: #222;
+        color: #555;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      #status {
+        margin-top: 25px;
+        font-size: 18px;
+        color: #39ff14;
+        font-weight: bold;
+      }
+
+      #log-box {
+        margin-top: 25px;
+        background: #15151c;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: left;
+        max-width: 650px;
+        margin-left: auto;
+        margin-right: auto;
+        border: 1px solid #252535;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>爆速AI自動翻訳コントローラー</h1>
+    <p style="color: #aaa">
+      言語を選び、「キャッチを開始」を押してからマイクに向かってお話しください。
+    </p>
+
+    <div class="lang-selector">
+      <button
+        id="btn-en"
+        class="lang-btn active"
+        onclick="changeLanguage('en-US', 'en')"
+      >
+        🇺🇸 英語
+      </button>
+      <button
+        id="btn-zh"
+        class="lang-btn"
+        onclick="changeLanguage('zh-CN', 'zh')"
+      >
+        🇨🇳 中国語
+      </button>
+      <button
+        id="btn-ko"
+        class="lang-btn"
+        onclick="changeLanguage('ko-KR', 'ko')"
+      >
+        🇰🇷 韓国語
+      </button>
+      <button
+        id="btn-it"
+        class="lang-btn"
+        onclick="changeLanguage('it-IT', 'it')"
+      >
+        🇮🇹 イタリア語
+      </button>
+      <button
+        id="btn-fr"
+        class="lang-btn"
+        onclick="changeLanguage('fr-FR', 'fr')"
+      >
+        🇫🇷 フランス語
+      </button>
+      <button
+        id="btn-ja"
+        class="lang-btn"
+        onclick="changeLanguage('ja-JP', 'ja')"
+      >
+        🇯🇵 日本語
+      </button>
+    </div>
+
+    <button id="start-btn" onclick="startRecognition()">キャッチを開始</button>
+    <div id="status">待機中...</div>
+
+    <div id="log-box">
+      <div style="color: #666; margin-bottom: 8px; font-weight: bold">
+        【高性能マイク状態ログ】
+      </div>
+      <div
+        id="speech-interim"
+        style="color: #39ff14; font-size: 16px; line-height: 1.5"
+      >
+        （ここにあなたの声がリアルタイムに表示されます）
+      </div>
+    </div>
+
+    <script>
+      const bc = new BroadcastChannel("sceneplus_speech_channel");
+      const statusEl = document.getElementById("status");
+      const interimEl = document.getElementById("speech-interim");
+
+      let selectedLangCode = "en-US";
+      let selectedSrcLang = "en";
+      let running = false;
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition = null;
+
+      // 🌐 【爆速化】最軽量の超高速接続ルートでGoogle翻訳を叩く
+      async function translateOnBrowser(text, srcLang) {
+        if (srcLang === "ja") return text;
+        try {
+          // 最も応答速度の速い単発リクエスト用エンドポイントを採用
+          const url = `https://translate.googleapis.com/translate_a/t?client=te&format=html&v=1.0&sl=${srcLang}&tl=ja&q=${encodeURIComponent(text)}`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          // データの返却形式に合わせて一瞬で抽出
+          if (Array.isArray(data)) {
+            return data[0] || text;
+          }
+          return data || text;
+        } catch (e) {
+          // 万が一上記が詰まった場合の高速バックアップルート
+          try {
+            const fallbackUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${srcLang}&tl=ja&dt=t&q=${encodeURIComponent(text)}`;
+            const res = await fetch(fallbackUrl);
+            const fData = await res.json();
+            return fData[0][0][0] || text;
+          } catch (err) {
+            console.log(e);
+            console.log(err);
+            return text;
+          }
+        }
+      }
+
+      function configureRecognition() {
+        recognition = new SpeechRecognition();
+        recognition.interimResults = true;
+        recognition.continuous = true;
+        recognition.maxAlternatives = 1;
+        recognition.lang = selectedLangCode;
+
+        recognition.onresult = async (event) => {
+          let interimTranscript = "";
+          let finalTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i][0].transcript) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              } else {
+                interimTranscript += event.results[i][0].transcript;
+              }
+            }
+          }
+
+          // 💬 話している最中のデータをデスクトップへリアルタイム送信
+          if (interimTranscript) {
+            interimEl.style.color = "#39ff14";
+            interimEl.innerText = "【収音中】: " + interimTranscript;
+            bc.postMessage({
+              text: interimTranscript,
+              lang: selectedSrcLang,
+              isFinal: false,
+            });
+          }
+
+          // ✅ 【確定時】ワンテンポ置かずに即座に爆速翻訳をかけて送信！
+          if (finalTranscript) {
+            const cleanedText = finalTranscript.trim();
+            if (!cleanedText) return;
+
+            interimEl.style.color = "#ffffff";
+            interimEl.innerText = "【確定・爆速翻訳中】: " + cleanedText;
+
+            // バックグラウンドで超高速翻訳
+            const japaneseResult = await translateOnBrowser(
+              cleanedText,
+              selectedSrcLang,
+            );
+
+            interimEl.innerText = "【翻訳完了】: " + japaneseResult;
+            bc.postMessage({
+              text: japaneseResult,
+              lang: selectedSrcLang,
+              isFinal: true,
+            });
+          }
+        };
+
+        recognition.onend = () => {
+          if (running) {
+            try {
+              recognition.start();
+            } catch (e) {}
+          }
+        };
+      }
+
+      function changeLanguage(langCode, srcLang) {
+        selectedLangCode = langCode;
+        selectedSrcLang = srcLang;
+        document
+          .querySelectorAll(".lang-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("btn-" + srcLang).classList.add("active");
+
+        if (running) {
+          running = false;
+          recognition.stop();
+          setTimeout(() => {
+            running = true;
+            configureRecognition();
+            recognition.start();
+          }, 200);
+        }
+      }
+
+      function startRecognition() {
+        running = true;
+        configureRecognition();
+        recognition.start();
+        statusEl.innerText = `🎙️ 爆速AIキャッチ中... [${selectedLangCode}]`;
+        document.getElementById("start-btn").disabled = true;
+        document.getElementById("start-btn").style.background = "#222";
+      }
+    </script>
+  </body>
+</html>
