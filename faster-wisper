@@ -1,0 +1,13 @@
+from faster_whisper import WhisperModel
+
+# 1. モデルの読み込み (最初は自動ダウンロードされます。大、中、小あります)
+# 初心者用PCなら 'small'、性能重視なら 'medium' や 'large-v3' を指定
+model = WhisperModel("small", device="cpu", compute_type="int8")
+
+# 2. 音声ファイルを読み込ませて文字起こし（会話を理解して漢字に変換）
+segments, info = model.transcribe("audio.mp3", beam_size=5, language="ja")
+
+# 3. 字幕データとして出力
+for segment in segments:
+    # [開始時間 -> 終了時間] 話した内容
+    print(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
