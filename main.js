@@ -8,8 +8,13 @@ let isRecording = false;
 const statusEl = document.getElementById("status-btn");
 const logEl = document.getElementById("log-area");
 
-// 🎙️ 音声キャッチ＆Whisper AI処理の開始
+// 🎙️ 録音の「開始 / 停止」を切り替えるメイン関数
 async function startRecognition() {
+  if (isRecording) {
+    stopRecognition();
+    return;
+  }
+
   if (!GROQ_API_KEY || GROQ_API_KEY.includes("ここにAPIキー")) {
     alert("APIキーが正しく設定されていません。");
     return;
@@ -20,7 +25,7 @@ async function startRecognition() {
     mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     
     mediaRecorder.ondataavailable = async (event) => {
-      if (event.data.size > 0) {
+      if (event.data.size > 0 && isRecording) {
         audioChunks.push(event.data);
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         audioChunks = []; // バッファリセット
@@ -37,12 +42,12 @@ async function startRecognition() {
     isRecording = true;
 
     if (statusEl) {
-      statusEl.innerText = "🎙️ Whisper AI (99%超高精度モード) 稼働中...";
-      statusEl.disabled = true;
-      statusEl.style.background = "#222";
+      statusEl.innerText = "🛑 録音を停止する";
+      statusEl.style.background = "#e63946"; // 赤色に変更
+      statusEl.disabled = false;
     }
     
-    if (logEl) {
+    if (logEl && logEl.innerText.includes("待機中")) {
       logEl.style.maxHeight = "400px";
       logEl.style.overflowY = "auto";
       logEl.innerHTML = "<div style='color: #888;'>Whisper AIが待機中... 話しかけるとログが下に溜まります</div>";
@@ -50,6 +55,23 @@ async function startRecognition() {
 
   } catch (err) {
     alert("マイクの起動に失敗しました: " + err.message);
+  }
+}
+
+// ⏹️ 録音を停止する関数
+function stopRecognition() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    // マイクのトラック（ストリーム）を停止してアクセスを解放
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+  }
+  
+  isRecording = false;
+
+  if (statusEl) {
+    statusEl.innerText = "🎙️ Whisper AIキャッチ開始";
+    statusEl.style.background = "#00e5ff"; // 元のスタイルに戻す
+    statusEl.disabled = false;
   }
 }
 
