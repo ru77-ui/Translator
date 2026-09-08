@@ -138,14 +138,17 @@
       </button>
     </div>
 
-   <button id="status-btn" onclick="startRecognition()">🎙️ Whisper AIキャッチ開始</button>
-    <div id="status">待機中...</div>
+  <!-- 🎙️ 録音トグルボタン & ステータス表示 -->
+<div style="text-align: center; margin: 20px 0;">
+  <button id="status-btn" onclick="toggleRecognition()" style="padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 50px; border: none; cursor: pointer; background: #00e5ff; color: #000; transition: all 0.3s ease;">
+    🎙️ Whisper AIキャッチ開始
+  </button>
+  <div id="status" style="margin-top: 10px; color: #aaa; font-size: 14px;">待機中...</div>
+</div>
 
-    <div id="log-box">
-      <div style="color: #666; margin-bottom: 8px; font-weight: bold">
-        【高性能マイク状態ログ】
-      </div>
-      <div
+<div id="log-area" style="max-height: 400px; overflow-y: auto; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+  <div style="color: #888;">Whisper AIが待機中... 声を出すとログが追加されます</div>
+</div>
         id="speech-interim"
         style="color: #39ff14; font-size: 16px; line-height: 1.5"
       >
